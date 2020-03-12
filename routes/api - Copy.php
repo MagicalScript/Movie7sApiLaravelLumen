@@ -40,22 +40,17 @@ $api->version ( 'v1', function ($api) {
 	} );
 } );
 
-// $app->get ('/', 'APIController@sayhellow');
+// $app->get('/', 'APIController@sayhello');
 $app->get ( '/mov/{page}', 'APIController@getMovies' );
-$app->get ( '/movByCate/{page}&{Cate}', 'APIController@getMoviesByCate' );
-$app->get ( '/tv/{page}&{Cate}', 'APIController@getTVsByCat' );
-$app->get ( '/tv/{page}', 'APIController@getTVs' );
+$app->get ( '/tv/{page}&{type}', 'APIController@getTVs' );
 
-$app->get ('/news/{page}','APIController@getnews');
-$app->get ('/newseasons/{page}&{cate}','APIController@getSeasonsByCategory');
-$app->get ('/info/{tmdb}','APIController@getInfo');
 $app->get ( '/ani/{page}&{type}', 'APIController@getAnimeTv' ); // canceled
 $app->get ( '/sea/{tv}&{page}', 'APIController@getSeasonByTV' );
 $app->get ( '/epi/{Season}&{page}', 'APIController@getEpisodeBySeason' );
 $app->get ( '/aniEpi/{Season}&{page}', 'APIController@getAnimeBySeason' ); // canceled
 $app->get ( '/link/{tmdb}&{page}', 'APIController@getServerByTmdb' );
 $app->get ( '/getCategory/', 'APIController@getCategory' );
-$app->get ( '/getComment/{tmdb}&{page}', 'APIController@getComment' );
+$app->get ( '/getComment/{tmdb}', 'APIController@getComment' );
 $app->get ( '/showtimes/{page}', 'APIController@getShowTime' );
 $app->get ( '/showtimesTmdb/{tmdb}&{page}', 'APIController@getShowTimeByTmdb' );
 $app->get ( '/showtimes/{page}', 'APIController@getShowTime' );
@@ -71,8 +66,6 @@ $app->post ( '/addSeason', 'APIController@addSeason' );
 $app->post ( '/addServer', 'APIController@addServer' );
 $app->post ( '/addShowTime', 'APIController@addShowTime' );
 $app->post ( '/addTvShow', 'APIController@addTvShow' );
-$app->post ( '/updateTvShow', 'APIController@updateTvShow' );
-$app->post ( '/updateMovies', 'APIController@updateMovies' );
 
 $app->delete ( '/deleteserver/{id}', 'APIController@deleteServer' );
 $app->delete ( '/deletetime/{id}', 'APIController@deleteTime' );
@@ -92,43 +85,10 @@ $app->get ( '/', function () use ($app) {
 } );
 
 $app->post ( '/login', 'LoginController@index' );
-$app->post ( '/register', 'UserController@register' );
-// $app->get ( '/user/{id}', [
-// 		'middleware' => 'login',
-// 		'uses' => 'UserController@get_user'
-// ] );
+$app->post ( '/register', 'Controller@register' );
+$app->get ( '/user/{id}', [ 
+		'middleware' => 'auth',
+		'uses' => 'UserController@get_user' 
+] );
 	
-//                                                           ADMIN roots
-// $app->post('login', 'AuthController@login');
-// $app->post('signup', 'AuthController@signup');
-// $app->post('forgot-password', 'AuthController@forgotPassword');
-// $app->post('password/email', 'PasswordController@postEmail');
-// $app->post('password/reset', 'PasswordController@postReset');
-$app->get('/userslist/{page}', 'AdminUserController@index');
-$app->get('users/{id}', 'AdminUserController@get');
-$app->patch('users/{id}', 'AdminUserController@update');
-$app->delete('users/{id}', 'AdminUserController@delete');
-
-$app->group(['middleware' => 'login'], function($app)  {
-	/* Profile API */
-// 	$app->get('me', 'UserController@getProfile');
-// 	$app->post('me', 'UserController@saveProfile');
-	//$app->get ( '/user/{id}', 'UserController@get_user' );
-	//$app->get ('/', 'APIController@sayhello');
-	$app->delete ( '/logOut', 'LoginController@logOut' );
-	
-	/* Admin API */
-	$app->group(['middleware' => 'admin'], function($app) {
-		/* Users API */
-		
-		//$app->get ('/', 'APIController@sayhello');
-		//$app->get ('/', 'APIController@sayhello');
-// 		$app->get('users', 'AdminUserController@index');
-// 		$app->post('users', 'UserController@create');
-//		$app->get('/users', 'AdminUserController@index');
-//		$app->get('users/{id}', 'AdminUserController@get');
-//		$app->patch('users/{id}', 'AdminUserController@update');
-//		$app->delete('users/{id}', 'AdminUserController@delete');
-	});
-});
 	

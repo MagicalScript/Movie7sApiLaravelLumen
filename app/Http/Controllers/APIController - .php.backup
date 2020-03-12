@@ -1,0 +1,283 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Laravel\Lumen\Application;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+
+use App\Episode;
+use App\Movies;
+use App\Season;
+use App\Tv;
+use App\Server;
+use App\Anime;
+use App\ShowTime;
+use Illuminate\Http\Request;
+
+
+class APIController extends Controller
+{
+    /**
+     * Get root url.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function getIndex(Application $app)
+    {
+        return new JsonResponse(['message' => $app->version()]);
+    }
+    
+    
+    public function addNewServer(Request $request){
+    	$response = array ();
+    	// return $request;
+    	$parameters = $request;
+    	try {
+    		if($parameters ['type'] == 'movie'){
+    			$this->addMovies($parameters ['movie_id'],$parameters ['movie_name'],$parameters ['metadata']);
+    			
+    			$createdView = Server::create ( array (
+    					'Title' => $parameters ['name'],
+    					'url' => $parameters ['url'],
+    					'tmdb' => $parameters ['movie_id'],
+    					'type' => $parameters ['type'],
+    			) );
+    		}else if($parameters ['type'] == 'episode'){
+    			$this->addTvShow($parameters ['show_id'], $parameters ['show_name'], $parameters ['type']);
+    			$this->addSeason($parameters ['season_id'], $parameters ['show_name'], $parameters ['season_number'], $parameters ['show_id']);
+    			$this->addEpisode($parameters ['episode_id_imdb'], $parameters ['show_name'], $parameters ['episode_number'], $parameters ['metadata'], $parameters ['season_id']);
+    			
+    			$createdView = Server::create ( array (
+    					'Title' => $parameters ['name'],
+    					'url' => $parameters ['url'],
+    					'tmdb' => $parameters ['episode_id_imdb'],
+    					'type' => $parameters ['type'],
+    			) );
+    		}else if($parameters ['type'] == 'anime'){
+    			$this->addTvShow($parameters ['show_id'], $parameters ['show_name'], $parameters ['type']);
+    			$this->addSeason($parameters ['season_id'], $parameters ['show_name'], $parameters ['season_number'], $parameters ['show_id']);
+    			$this->addAnime($parameters ['episode_id_imdb'], $parameters ['show_name'], $parameters ['episode_number'], $parameters ['metadata'], $parameters ['season_id']);
+    			
+    			$createdView = Server::create ( array (
+    					'Title' => $parameters ['name'],
+    					'url' => $parameters ['url'],
+    					'tmdb' => $parameters ['episode_id_imdb'],
+    					'type' => $parameters ['type'],
+    			) );
+    		}
+    		//    public function addEpisode(Integer $Id, string $name, Integer $n,string $meta, string $season){
+    		
+    		
+    		return response ()->json ( $parameters);
+    	} catch ( Exception $e ) {
+    		return response ()->json ( $e->all () );
+    	}
+    }
+    public function deleteServer($id){
+    	Server::where('id', $id)->delete();
+    }
+    
+    public function addTvShow(string $Id, string $name, string $type){
+    	$find = Tv::where('tmdb',$Id)->get()->count();
+    	if($find == 0){
+    		Tv::create ( array (
+    				'title' => $name,
+    				'tmdb' => $Id,
+    				'type' => $type,
+    		));
+    	}
+    }
+    public function addSeason(string $Id, string $name, int $n, string $tv){
+    	$find = Season::where('tmdb',$Id)->get()->count();
+    	if($find == 0){
+    		Season::create ( array (
+    				'title' => $name,
+    				'tmdb' => $Id,
+    				'num' => $n,
+    				'tv' => $tv,
+    		));
+    	}
+    }
+    public function addEpisode(string $Id, string $name, int $n,string $meta, string $season){
+    	$find = Episode::where('tmdb',$Id)->get()->count();
+    	if($find == 0){
+    		Episode::create ( array (
+    				'title' => $name,
+    				'tmdb' => $Id,
+    				'num' => $n,
+    				'metadata' => $meta,
+    				'season' => $season,
+    		));
+    	}
+    }
+    public function addAnime(string $Id, string $name, int $n,string $meta, string $season){
+    	$find = Anime::where('tmdb',$Id)->get()->count();
+    	if($find == 0){
+    		Anime::create ( array (
+    				'title' => $name,
+    				'tmdb' => $Id,
+    				'num' => $n,
+    				'metadata' => $meta,
+    				'season' => $season,
+    		));
+    	}
+    }
+    public function addMovies(string $Id, string $name, string $meta){
+    	$find = Movies::where('tmdb',$Id)->get()->count();
+    	if($find == 0){
+    		Movies::create ( array (
+    				'title' => $name,
+    				'tmdb' => $Id,
+    				'metadata' => $meta,
+    		));
+    	}
+    }
+    
+    
+    
+    public function getMovies($page){
+    	//$page = $request['page'];
+    	$page = $page * 10;
+    	$data = DB::table('movies')
+    	->take(10)->skip($page)->get();
+    	//Season::where('',$tv)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    public function getTVs($page,$type){
+    	$page = $page * 10;
+    	$data = DB::table('tv')
+    	->where('type',$type)
+    	->take(10)->skip($page)->get();
+    	//Season::where('',$type)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    public function getSeasonByTV($tv,$page){
+    	$page = $page * 10;
+    	$data = DB::table('tv')
+    	->join('season', 'tv.tmdb', '=', 'season.tv')
+    	->where('tv.tmdb',$tv)
+    	->take(10)->skip($page)->get();
+    	//Season::where('',$tv)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    public function getEpisodeBySeason($Season,$page){
+    	$page = $page * 10;
+    	$data = DB::table('season')
+    	->join('episode', 'episode.season', '=', 'season.tmdb')
+    	->where('season.tmdb',$Season)
+    	->take(10)->skip($page)->get();
+    	//Season::where('',$tv)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    public function getAnimeBySeason($Season,$page){
+    	$page = $page * 10;
+    	$data = DB::table('season')
+    	->join('anime', 'anime.season', '=', 'season.tmdb')
+    	->where('season.tmdb',$Season)
+    	->take(10)->skip($page)->get();
+    	//Season::where('',$tv)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    public function getAnimeTv($page,$type){
+    	$page = $page * 10;
+    	$data = DB::table('tv')
+    	->where('type',$type)
+    	->take(10)->skip($page)->get();
+    	//Season::where('',$type)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    public function getServerByTmdb($tmdb,$page){
+    	$page = $page * 100;
+    	$data = DB::table('server')
+    	->where('tmdb',$tmdb)
+    	->take(100)->skip($page)->get();
+    	//Season::where('',$tv)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    public function getShowTime($page){
+    	$page = $page * 10;
+    	$data = DB::table('showtime')
+    	//->where('type',$type)
+    	->take(10)->skip($page)->get();
+    	//Season::where('',$type)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    public function getShowTimeByTmdb($tmdb,$page){
+    	$page = $page * 100;
+    	$data = DB::table('showtime')
+    	->where('tmdb',$tmdb)
+    	->take(100)->skip($page)->get();
+    	//Season::where('',$tv)->take(10)->skip($page)->get();
+    	return $data;
+    }
+    
+    public function deleteTime($id){
+    	ShowTime::where('id', $id)->delete();
+    }
+    public function sayhello(){
+    	return 'hello Crazy Dev ;)';
+    }
+    public function sayhellow(Request $request){
+    	return Response()->json($request->all());
+    }
+    
+    
+//     public function addShowTime(Request $request){
+//     	$response = array ();
+//     	// return $request;
+//     	$parameters = $request;
+//     	ShowTime::create( array (
+//     			'tmdb' => $parameters ['tmdb'],
+//     			'channel' => $parameters ['channel'],
+//     			'day' => $parameters ['day'],
+//     			'time' => $parameters ['time'],
+//     	) );
+//     }
+    public function addShowTime(Request $request){
+    	$response = array ();
+    	// return $request;
+    	$parameters = $request;
+    	try {
+    		if($parameters ['type'] == 'movie'){
+    			$this->addMovies($parameters ['movie_id'],$parameters ['movie_name'],$parameters ['metadata']);
+    			
+    			$createdView = ShowTime::create ( array (
+    					'tmdb' => $parameters ['movie_id'],
+    					'channel' => $parameters ['channel'],
+    					'day' => $parameters ['day'],
+    					'time' => $parameters ['time'],
+    			) );
+    		}else if($parameters ['type'] == 'episode'){
+    			$this->addTvShow($parameters ['show_id'], $parameters ['show_name'], $parameters ['type']);
+    			$this->addSeason($parameters ['season_id'], $parameters ['show_name'], $parameters ['season_number'], $parameters ['show_id']);
+    			$this->addEpisode($parameters ['episode_id_imdb'], $parameters ['show_name'], $parameters ['episode_number'], $parameters ['metadata'], $parameters ['season_id']);
+    			
+    			$createdView = ShowTime::create ( array (
+    					'tmdb' => $parameters ['episode_id_imdb'],
+    					'channel' => $parameters ['channel'],
+    					'day' => $parameters ['day'],
+    					'time' => $parameters ['time'],
+    			) );
+    		}else if($parameters ['type'] == 'anime'){
+    			$this->addTvShow($parameters ['show_id'], $parameters ['show_name'], $parameters ['type']);
+    			$this->addSeason($parameters ['season_id'], $parameters ['show_name'], $parameters ['season_number'], $parameters ['show_id']);
+    			$this->addAnime($parameters ['episode_id_imdb'], $parameters ['show_name'], $parameters ['episode_number'], $parameters ['metadata'], $parameters ['season_id']);
+    			
+    			$createdView = ShowTime::create ( array (
+    					'tmdb' => $parameters ['episode_id_imdb'],
+    					'channel' => $parameters ['channel'],
+    					'day' => $parameters ['day'],
+    					'time' => $parameters ['time'],
+    			) );
+    		}
+    		//    public function addEpisode(Integer $Id, string $name, Integer $n,string $meta, string $season){
+    		
+    		
+    		return response ()->json ( $parameters);
+    	} catch ( Exception $e ) {
+    		return response ()->json ( $e->all () );
+    	}
+    }
+    
+}

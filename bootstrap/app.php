@@ -59,9 +59,15 @@ $app = new Laravel\Lumen\Application(
     realpath(__DIR__.'/../')
 );
 
-$app->withFacades();
+//$app->withFacades();
+$app->withFacades(true, [
+		Tymon\JWTAuth\Facades\JWTAuth::class => 'JWTAuth',
+		Tymon\JWTAuth\Facades\JWTFactory::class => 'JWTFactory'
+]);
 
 $app->withEloquent();
+
+//$app->register(Tymon\JWTAuth\Providers\LumenServiceProvider::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -100,7 +106,9 @@ $app->middleware([
 ]);
 
 $app->routeMiddleware([
-    // 'auth' => App\Http\Middleware\Authenticate::class,
+    'auth' => App\Http\Middleware\Authenticate::class,
+    'login' => App\Http\Middleware\userMiddleware::class,
+		'admin' => App\Http\Middleware\AdminMiddleware::class,
 ]);
 
 /*
@@ -114,10 +122,10 @@ $app->routeMiddleware([
 |
 */
 
-// $app->register(App\Providers\AppServiceProvider::class);
-// $app->register(App\Providers\AuthServiceProvider::class);
-// $app->register(App\Providers\GuardServiceProvider::class);
-// $app->register(App\Providers\EventServiceProvider::class);
+$app->register(App\Providers\AppServiceProvider::class);
+$app->register(App\Providers\AuthServiceProvider::class);
+$app->register(App\Providers\GuardServiceProvider::class);
+$app->register(App\Providers\EventServiceProvider::class);
 
 // Dingo Adapter for Lumen
 $app->register(Zeek\LumenDingoAdapter\Providers\LumenDingoAdapterServiceProvider::class);

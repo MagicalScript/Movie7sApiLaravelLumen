@@ -46,29 +46,14 @@ class APIController extends Controller {
 	public function addTvShow(Request $parameters) {
 		$find = Tv::where ( 'tmdb', $parameters['tmdb'])->get ()->count ();
 		if ($find == 0) {
-// 			$this.deleteTv($parameters['tmdb']);
-			Tv::create ( array (
-					'title' => $parameters['title'],
-					'tmdb' => $parameters['tmdb'],
-					'category' => $parameters['category'],
-			) );
+			$this.deleteTv($parameters['tmdb']);
 		}
 		
-// 		Tv::create ( array (
-// 				'title' => $parameters['title'],
-// 				'tmdb' => $parameters['tmdb'],
-// 				'category' => $parameters['category'],
-// 		) );
-	}
-	public function updateTvShow(Request $parameters) {
-		$find = Tv::where ( 'tmdb', $parameters['tmdb'])->get ()->count ();
-		if ($find != 0) {
-			Tv::where ( 'tmdb', $parameters['tmdb'] )->update ( [
-					'category' => $parameters['category']
-			] );
-		}else{
-			$this->addTvShow($parameters);
-		}
+		Tv::create ( array (
+				'title' => $parameters['title'],
+				'tmdb' => $parameters['tmdb'],
+				'category' => $parameters['category'],
+		) );
 	}
 	public function addSeason(Request $parameters) {
 		$find = Season::where ( 'tmdb', $parameters['tmdb'])->get ()->count ();
@@ -104,22 +89,8 @@ class APIController extends Controller {
 			) );
 		}
 	}
-	public function updateMovies(Request $parameters) {
-		$find = Movies::where ( 'tmdb', $parameters['tmdb'])->get ()->count ();
-		if ($find == 0) {
-			Movies::create ( array (
-					'title' => $parameters['title'],
-					'tmdb' => $parameters['tmdb'],
-					'metadata' => $parameters['metadata'],
-					'category' => $parameters['category'],
-			) );
-		}else{
-			Movies::where ( 'tmdb', $parameters['tmdb'] )->update ( [
-					'category' => $parameters['category']
-			] );
-		}
-	}
 	public function addCategory(Request $parameters) {
+		header('Access-Control-Allow-Origin: *');
 		$find = Category::where ('name', $parameters['name'])->get ()->count ();
 		if ($find == 0) {
 			Category::create ( array (
@@ -134,9 +105,6 @@ class APIController extends Controller {
 				'comment' => $parameters['comment'],
 				'approved' => 'no',
 		) );
-		$res ['success'] = true;
-		$res ['result'] = 'Hello world with lumen';
-		return response ( $res );
 	}
 	public function addInfo(Request $parameters) {
 		$find = Infos::where ('tmdb', $parameters['tmdb'])->get ()->count ();
@@ -160,7 +128,6 @@ class APIController extends Controller {
 		$page = $page * 10;
 		$data = DB::table ( 'infos' )->take ( 10 )->skip ( $page )
 		->rightjoin ( 'movies', 'infos.tmdb', '=', 'movies.tmdb' )
-		->orderBy('movies.created_at', 'desc')
 		->get ();
 		// Season::where('',$tv)->take(10)->skip($page)->get();
 		return $data;
@@ -171,30 +138,26 @@ class APIController extends Controller {
 		$data = DB::table ( 'movies' )->take ( 10 )->skip ( $page )
 		->join('category','category.id','=','movies.category')
 		->where ( 'category', $Cate)
-		->orderBy('movies.created_at', 'desc')
 		->get ();
 		// Season::where('',$tv)->take(10)->skip($page)->get();
 		return $data;
 	}
 	public function getTVsByCat($page, $Cate) {
 		$page = $page * 10;
-		$data = DB::table ( 'tv' )->where ( 'category', $Cate)->orderBy('created_at', 'desc')->take ( 10 )->skip ( $page )->get ();
+		$data = DB::table ( 'tv' )->where ( 'category', $Cate)->take ( 10 )->skip ( $page )->get ();
 		// Season::where('',$type)->take(10)->skip($page)->get();
 		return $data;
 	}
 	public function getTVs($page) {
 		$page = $page * 10;
-		$data = DB::table ( 'tv' )->orderBy('created_at', 'desc')
-		->take ( 10 )->skip ( $page )->get ();
+		$data = DB::table ( 'tv' )->take ( 10 )->skip ( $page )->get ();
 		// Season::where('',$type)->take(10)->skip($page)->get();
 		return $data;
 	}
-	public function getComment($tmdb,$page) {
+	public function getComment($tmdb) {
 		$page = $page * 10;
-		$data = DB::table ( 'comment' )->select('comment.comment','users.name')
-		->where ( 'tmdb', $tmdb)->orderBy('comment.created_at', 'desc')
-		->join('users','users.id','=','comment.user')
-		->take(10)->skip($page)->get();
+		$data = DB::table ( 'comment' )->where ( 'tmdb', $tmdb)->get ();
+		// Season::where('',$type)->take(10)->skip($page)->get();
 		return $data;
 	}
 	public function getAllComment($tmdb) {
@@ -309,7 +272,7 @@ class APIController extends Controller {
 	}
 	public function deleteTv($tmdb) {
 		try {
-			//$this->deleteSeason($tmdb);
+			$this->deleteSeason($tmdb);
 			Tv::where ( 'tmdb', $tmdb)->delete ();
 		} catch (Exception $e) {
 			return response ()->json ( $e->all () );
@@ -360,12 +323,11 @@ class APIController extends Controller {
 		
 		$page = $page * 10;
 		
-		//$epi = DB::table('episode')->select('episode.title','episode.tmdb','episode.created_at','season.tmdb as seasonTmdb','season.num as season','episode.num as num','tv.tmdb as tv',DB::raw("'epi' as type"))
-		//->join('season','season.tmdb','=', 'episode.season')
-		//->join('tv','tv.tmdb','=','season.tv')->groupBy('season.tmdb')->orderBy('created_at', 'desc');
+		$epi = DB::table('episode')->select('episode.title','episode.tmdb','episode.created_at','season.tmdb as seasonTmdb','season.num as season','episode.num as num','tv.tmdb as tv',DB::raw("'epi' as type"))
+		->join('season','season.tmdb','=', 'episode.season')
+		->join('tv','tv.tmdb','=','season.tv')->groupBy('season.tmdb')->orderBy('created_at', 'desc');
 		$mov = DB::table('movies')->select('title','tmdb', 'created_at',DB::raw("'' as seasonTmdb"),DB::raw("'' as season"),DB::raw("'' as num"),DB::raw("'' as tv"),DB::raw("'mov' as type"))
-		//->union($epi)
-		->orderBy('created_at', 'desc')
+		->union($epi)->orderBy('created_at', 'desc')
 		->take ( 10 )->skip ( $page )->get();
 		
 // 		$data = DB::select('SELECT tmdb,created_at FROM episode UNION SELECT tmdb,created_at FROM movies ORDER BY created_at', [])
@@ -380,7 +342,6 @@ class APIController extends Controller {
 		->join('episode','season.tmdb','=', 'episode.season')
 		->join('tv','tv.tmdb','=','season.tv')
 		->where('tv.category','=',$cate)->groupBy('episode.season')
-		->orderBy('season.created_at', 'desc')
 		->take ( 10 )->skip ( $page )->get();
 		
 		// 		$data = DB::select('SELECT tmdb,created_at FROM episode UNION SELECT tmdb,created_at FROM movies ORDER BY created_at', [])
@@ -388,27 +349,9 @@ class APIController extends Controller {
 		return response ()->json ( $season);
 	}
 	public function getInfo($tmdb){
-		//$data = DB::table ( 'infos' )->where ( 'tmdb', $tmdb)->get ();
+		$data = DB::table ( 'infos' )->where ( 'tmdb', $tmdb)->get ();
 		// Season::where('',$tv)->take(10)->skip($page)->get();
-		
-		$epi = DB::table('infos')->select('infos.name','infos.overview',DB::raw('category.id as cate'),DB::raw('category.name as ncate'))
-		->join('tv','tv.tmdb','=', 'infos.tmdb')
-		->leftjoin('category','category.id','=','tv.category')
-		->where ( 'infos.tmdb', $tmdb);
-		$epi2 = DB::table('infos')->select('infos.name','infos.overview',DB::raw('category.id as cate'),DB::raw('category.name as ncate'))
-		->join('episode','episode.tmdb','=', 'infos.tmdb')
-		->join('season','season.tmdb','=', 'episode.season')
-		->join('tv','tv.tmdb','=','season.tv')
-		->leftjoin('category','category.id','=','tv.category')
-		->where ( 'infos.tmdb', $tmdb);
-		$mov = DB::table('infos')->select('infos.name','infos.overview',DB::raw('category.id as cate'),DB::raw('category.name as ncate'))
-		->join('movies','movies.tmdb','=', 'infos.tmdb')
-		->leftjoin('category','category.id','=','movies.category')
-		->where ( 'infos.tmdb', $tmdb)
-		->union($epi)
-		->union($epi2)->get();
-		
-		return $mov;
+		return $data;
 	}
 	
 	
